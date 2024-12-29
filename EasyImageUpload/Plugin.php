@@ -1,6 +1,5 @@
 <?php
 namespace TypechoPlugin\EasyImageUpload;
-
 use Typecho\Plugin\PluginInterface;
 use Typecho\Widget\Helper\Form;
 use Typecho\Widget\Helper\Form\Element\Text;
@@ -11,11 +10,11 @@ use CURLFile;
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 /**
- * 可以直接在编辑时点击上传按钮上传图片至简单图床(EasyImage)，安装完成后先在插件设置中填写对应参数后再使用，若在使用过程中出现问题或者Bug请截图保存反馈至作者邮箱
+ * 可以直接在编辑时点击上传按钮上传图片至简单图床(EasyImage)，安装完成后先在插件设置中填写对应参数后再使用，若在使用过程中出现问题或者Bug请截图保存反馈Github。
  *
  * @package EasyImageUpload
  * @author RGB255
- * @version 1.0.0
+ * @version 1.0.1
  * @link https://obai.cc
  */
 
@@ -39,7 +38,7 @@ class Plugin implements PluginInterface
 
     public static function config(Form $form)
     {
-        $desc = new Text('desc', NULL, '', '插件介绍：', '<p>本插件由RGB255基于isYangs的插件修改而来的 &nbsp;&nbsp; <a href="mailto:b@obai.cc" target="_blank">点我反馈Bug</a> &nbsp;&nbsp; <a href="https://obai.cc" target="_blank">RGB255</a></p>');
+        $desc = new Text('desc', NULL, '', '插件介绍：', '<p>本插件由RGB255基于isYangs的插件修改而来的 &nbsp;&nbsp; <a href="https://github.com/lovebai/EasyImageUpload-for-typecho" target="_blank">点我反馈Bug</a> &nbsp;&nbsp; <a href="https://obai.cc" target="_blank">RGB255</a></p>');
         $form->addInput($desc);
 
         $api = new Text('api', NULL, '', 'Api：', '只需填写域名包含 http 或 https 无需<code style="padding: 2px 4px; font-size: 90%; color: #c7254e; background-color: #f9f2f4; border-radius: 4px;"> / </code>结尾<br><code style="padding: 2px 4px; font-size: 90%; color: #c7254e; background-color: #f9f2f4; border-radius: 4px;">示例地址：https://i.obai.cc</code>');
@@ -253,65 +252,50 @@ class Plugin implements PluginInterface
 
         $json = json_decode($res, true);
      
-        if ($json['code'] != 200) {
+        if ($json['code'] != 200 && $json['result'] === 'success') {
             file_put_contents('./usr/plugins/'.self::PLUGIN_NAME.'/msg.log', json_encode($json, 256) . PHP_EOL, FILE_APPEND);
             return false;
         }
         
         return [
-            'img_key' => $json['srcName'],
-            'img_id' => $json['srcName'],
-            'name'   =>$json['srcName'].'.jpg',
-            'path'   => $json['url'],
-            'size'   => '',
-            'type'   => 'webp',
-            'mime'   => 'image/jpg',
-	     'description'  => 'image/jpg',
+           'name' => $file['name'],
+           'path' => $json['url'], // 第三方返回的图片地址
+           'size' => $file['size'],
+           'type' => $ext,
+           'delete' => $json['del'], // 保存删除链接
         ];
     }
 
     private static function _deleteImg(array $content): bool
     {
-      
-        $options = Options::alloc()->plugin(self::PLUGIN_NAME);
-  
-        $api     = $options->api . '/api/index.php';
-        $token   = 'Bearer '.$options->token;
      
 
-        $id = $content['attachment']->img_key;
+        $deleteUrl = $content['attachment']->delete;
         
-        if (empty($id)) {
+        if (empty($deleteUrl)) {
             return false;
         }
         
-        $res  = self::_curlDelete($api . '/' . $id, ['key' => $id], $token);
+        $res  = self::_curlDelete($deleteUrl);
         $json = json_decode($res, true);
     
-        if (!is_array($json)) {
-
+        if (!isset($json)||$json['code'] !== 200) {
             return false;
         }
 
         return true;
     }
 
-    private static function _curlDelete($api, $post, $token)
+    private static function _curlDelete($api)
     {
-        $headers = array(
-            "Content-Type: multipart/form-data"
-            );
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $api);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
         curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36');
         curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
         $res = curl_exec($ch);
         curl_close($ch);
 
