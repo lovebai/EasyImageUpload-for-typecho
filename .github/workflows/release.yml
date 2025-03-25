@@ -18,11 +18,10 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
 
-      - name: Create ZIP and TAR files
+      - name: Create ZIP 
         run: |
           mkdir release
           zip -r EasyImageUpload-${VERSION}.zip . -x ".git/*" ".github/*"
-          tar -czvf EasyImageUpload-${VERSION}.tar.gz --exclude=.git --exclude=.github .
 
       - name: Create GitHub Release
         id: create_release
@@ -34,4 +33,3 @@ jobs:
           prerelease: false
           files: |
             EasyImageUpload-${{ env.VERSION }}.zip
-            EasyImageUpload-${{ env.VERSION }}.tar.gz
