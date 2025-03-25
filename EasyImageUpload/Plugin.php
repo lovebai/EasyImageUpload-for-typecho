@@ -269,7 +269,7 @@ class Plugin implements PluginInterface
            'path' => $json['url'], // 第三方返回的图片地址
            'size' => $file['size'],
            'type' => $ext,
-              'mime' => $file['type'], // 第三方返回的图片类型
+           'mime' => $file['type'], // 第三方返回的图片类型
            'delete' => $json['del'], // 保存删除链接
         ];
     }
