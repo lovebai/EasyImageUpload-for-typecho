@@ -10,11 +10,11 @@ use CURLFile;
 
 if (!defined('__TYPECHO_ROOT_DIR__')) exit;
 /**
- * 可以直接在编辑时点击上传按钮上传图片至简单图床(EasyImage)，安装完成后先在插件设置中填写对应参数后再使用，若在使用过程中出现问题或者Bug请截图保存反馈Github。
+ * 上传图片至简单图床(EasyImage)，安装完成后先在插件设置中填写对应参数后再使用，若在使用过程中出现问题或者Bug请截图保存反馈Github。
  *
  * @package EasyImageUpload
  * @author RGB255
- * @version 1.0.1
+ * @version 1.0.2
  * @link https://obai.cc
  */
 
@@ -25,6 +25,7 @@ class Plugin implements PluginInterface
 
     public static function activate()
     {
+        \Typecho\Plugin::factory('Widget_Upload')->upload     = __CLASS__.'::modifiefUpload';
         \Typecho\Plugin::factory('Widget_Upload')->uploadHandle     = __CLASS__.'::uploadHandle';
         \Typecho\Plugin::factory('Widget_Upload')->modifyHandle     = __CLASS__.'::modifyHandle';
         \Typecho\Plugin::factory('Widget_Upload')->deleteHandle     = __CLASS__.'::deleteHandle';
@@ -47,12 +48,18 @@ class Plugin implements PluginInterface
         $token = new Text('token', NULL, '', 'Token：', '请按示例严格填写：<code style="padding: 2px 4px; font-size: 90%; color: #c7254e; background-color: #f9f2f4; border-radius: 4px;">gSjmtTkPjS8qPaLl98dJwdVtU492vQbDFI6pg</code>');
         $form->addInput($token);
         
-
         echo '<script>window.onload = function(){document.getElementsByName("desc")[0].type = "hidden";}</script>';
     }
 
     public static function personalConfig(Form $form)
     {
+    }
+
+    public static function modifiefUpload($upload)
+    {
+        $upload->attachment->url = $upload->attachment->path;
+        return $upload;
+        
     }
 
     public static function uploadHandle($file)
@@ -262,6 +269,7 @@ class Plugin implements PluginInterface
            'path' => $json['url'], // 第三方返回的图片地址
            'size' => $file['size'],
            'type' => $ext,
+              'mime' => $file['type'], // 第三方返回的图片类型
            'delete' => $json['del'], // 保存删除链接
         ];
     }
