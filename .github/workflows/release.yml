@@ -1,0 +1,37 @@
+name: Create Release and Upload Assets
+
+on:
+  push:
+    tags:
+      - '*'  
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get tag version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Create ZIP and TAR files
+        run: |
+          mkdir release
+          zip -r EasyImageUpload-${VERSION}.zip . -x ".git/*" ".github/*"
+          tar -czvf EasyImageUpload-${VERSION}.tar.gz --exclude=.git --exclude=.github .
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          draft: false
+          prerelease: false
+          files: |
+            EasyImageUpload-${{ env.VERSION }}.zip
+            EasyImageUpload-${{ env.VERSION }}.tar.gz
