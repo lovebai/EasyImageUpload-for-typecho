@@ -5,31 +5,31 @@ on:
     tags:
       - '*'  
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
-  release:
-    name: Build and Release
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Tag
+        run: git fetch --force --tags
 
-      - name: Get tag version
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-
-      - name: Create ZIP 
+      - name: Create zip package
         run: |
-          mkdir release
-          zip -r EasyImageUpload-${VERSION}.zip . -x ".git/*" ".github/*"
+          VERSION=${GITHUB_REF#refs/tags/} 
+          ZIP_NAME="EasyImageUpload_${VERSION}.zip"
+          zip -r $ZIP_NAME .  # 打包当前目录
+          echo "Created zip package: $ZIP_NAME"
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v2
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.VERSION }}
-          name: Release ${{ env.VERSION }}
-          draft: false
-          prerelease: false
-          files: |
-            EasyImageUpload-${{ env.VERSION }}.zip
+          tag: ${{ github.ref }}  
+          files: EasyImageUpload_${GITHUB_REF#refs/tags/}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
